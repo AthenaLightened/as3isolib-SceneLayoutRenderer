@@ -1,0 +1,9 @@
+SceneLayoutRenderer
+
+The optimised renderer, constrains: no overlap, no z-value
+
+// enable the scene layout renderer
+isoScene.layoutRenderer = new SceneLayoutRenderer();
+
+// iso object is an object need to be re-depthed.
+SceneLayoutRenderer(isoScene.layoutRenderer).sort(isoObject);
