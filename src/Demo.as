@@ -1,5 +1,6 @@
 ﻿package 
 {
+	import as3isolib.core.IsoDisplayObject;
 	import as3isolib.display.IsoSprite;
 	import as3isolib.display.IsoView;
 	import as3isolib.display.primitive.IsoBox;
@@ -49,8 +50,7 @@
 			_isoScene.layoutRenderer = new SceneLayoutRenderer();
 			_isoView.addScene(_isoScene);
 			
-			_isoBox = addBox(_isoScene, 'hero', 0, 0, 1, 1);
-			_isoBox.fill = new SolidColorFill(0xff0000, 0.6);
+			_isoBox = addBox(_isoScene, 'hero', new SolidColorFill(0xff0000, 0.6), 0, 0, 1, 1);
 			
 			//for (var i:int = 0; i < 15;++i)
 			//{
@@ -60,9 +60,10 @@
 				//}
 			//}
 			//
-			addBox(_isoScene, 'box1', 3, 1, 1, 2);
-			addBox(_isoScene, 'box2', 1, 5, 1, 1);
-			addBox(_isoScene, 'box3', 2, 2, 1, 4);
+			
+			addBox(_isoScene, 'box1', new SolidColorFill(0xffff00, 1), 3, 1, 1, 2);
+			addBox(_isoScene, 'box2', new SolidColorFill(0xff00ff, 1), 1, 5, 1, 1);
+			addBox(_isoScene, 'box3', new SolidColorFill(0x00ff00, 1), 2, 2, 1, 4);
 			
 			addChild(_isoView);
 			_isoView.render(true);
@@ -76,12 +77,19 @@
 			_isoBox.y = point.y;
 			_isoBox.render(false);
 			SceneLayoutRenderer(_isoScene.layoutRenderer).sort(_isoBox);
+			
+			trace('after sort');
+			for each(var iso:IsoDisplayObject in _isoScene.displayListChildren)
+			{
+				trace(iso.id + ", " + iso.depth);
+			}
 		}
 		
 		
-		private function addBox(container:IIsoScene, name:String, x:Number, y:Number, width:int, length:int):IsoBox
+		private function addBox(container:IIsoScene, name:String, color:SolidColorFill, x:Number, y:Number, width:int, length:int):IsoBox
 		{
 			var box:IsoBox = new IsoBox( { id: name, x: x * CELL_SIZE, y: y * CELL_SIZE, z: 0, width: width * CELL_SIZE, height: CELL_SIZE, length: length * CELL_SIZE } );
+			box.fill = color;
 			box.container.cacheAsBitmap = true;
 			container.addChild(box);
 			return box;
