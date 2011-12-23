@@ -39,6 +39,7 @@
 			removeEventListener(Event.ADDED_TO_STAGE, init);
 			// entry point
 			
+			
 			_isoView = new IsoView();
 			_isoView.setSize(stage.stageWidth, stage.stageHeight);
 			_isoView.panBy(0, 200);
@@ -52,18 +53,19 @@
 			
 			_isoBox = addBox(_isoScene, 'hero', new SolidColorFill(0xff0000, 0.6), 0, 0, 1, 1);
 			
-			//for (var i:int = 0; i < 15;++i)
-			//{
-				//for (var j:int = 0; j < 15; ++j)
-				//{
-					//addBox(_isoScene, "box_" + j + "_" + i, j * 2, i * 2, 1, 1);
-				//}
-			//}
-			//
+			var fill:SolidColorFill = new SolidColorFill(0xff9876, 1);
+			for (var i:int = 0; i < 15;++i)
+			{
+				for (var j:int = 0; j < 15; ++j)
+				{
+					addBox(_isoScene, "box_" + j + "_" + i, fill, j * 2, i * 2, 1, 1);
+				}
+			}
 			
-			addBox(_isoScene, 'box1', new SolidColorFill(0xffff00, 1), 3, 1, 1, 2);
-			addBox(_isoScene, 'box2', new SolidColorFill(0xff00ff, 1), 1, 5, 1, 1);
-			addBox(_isoScene, 'box3', new SolidColorFill(0x00ff00, 1), 2, 2, 1, 4);
+			
+			//addBox(_isoScene, 'yellow', new SolidColorFill(0xffff00, 1), 5, 2, 1, 2);
+			//addBox(_isoScene, 'purple', new SolidColorFill(0xff00ff, 1), 3, 6, 1, 1);
+			//addBox(_isoScene, 'green', new SolidColorFill(0x00ff00, 1), 4, 3, 1, 4);
 			
 			addChild(_isoView);
 			_isoView.render(true);
@@ -76,13 +78,10 @@
 			_isoBox.x = point.x;
 			_isoBox.y = point.y;
 			_isoBox.render(false);
-			SceneLayoutRenderer(_isoScene.layoutRenderer).sort(_isoBox);
 			
-			trace('after sort');
-			for each(var iso:IsoDisplayObject in _isoScene.displayListChildren)
-			{
-				trace(iso.id + ", " + iso.depth);
-			}
+			SceneLayoutRenderer(_isoScene.layoutRenderer).redepth(_isoBox);
+			
+			//_isoScene.render(false);
 		}
 		
 		

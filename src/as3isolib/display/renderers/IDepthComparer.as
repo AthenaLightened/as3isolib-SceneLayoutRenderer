@@ -12,9 +12,9 @@ package as3isolib.display.renderers
 		 * Compare the depth of two iso display objects
 		 * @param	isoA
 		 * @param	isoB
-		 * @return true if iso A is behind iso B, false otherwise
+		 * @return -1 if iso A is behind iso B, 1 otherwise
 		 */
-		function compare(isoA:IIsoDisplayObject, isoB:IIsoDisplayObject):Boolean;
+		function compare(isoA:IIsoDisplayObject, isoB:IIsoDisplayObject):int;
 	}
 	
 }

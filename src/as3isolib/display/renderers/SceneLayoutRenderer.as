@@ -1,8 +1,11 @@
 package as3isolib.display.renderers
 {
 	import as3isolib.core.IIsoDisplayObject;
+	import as3isolib.core.IsoDisplayObject;
 	import as3isolib.display.renderers.ISceneLayoutRenderer;
 	import as3isolib.display.scene.IIsoScene;
+	import flash.utils.Dictionary;
+	import flash.utils.getTimer;
 	
 	/**
 	 * SceneLayoutRenderer
@@ -20,8 +23,11 @@ package as3isolib.display.renderers
 		// the depth comparer to use
 		private var _depthComparer:IDepthComparer;
 		
-		// the scene using this renderer
+		// It's faster to make class variables & a method, rather than to do a local function closure
+		private var _depth:uint;
+		private var _visited:Dictionary;
 		private var _scene:IIsoScene;
+		private var _dependency:Dictionary;
 		
 		public function SceneLayoutRenderer(depthComparer:IDepthComparer = null)
 		{
@@ -39,74 +45,118 @@ package as3isolib.display.renderers
 		{
 			_scene = scene;
 			
+			// Rewrite #2 by David Holz, dependency version (naive for now)
+			// TODO - cache dependencies between frames, only adjust invalidated objects, keeping old ordering as best as possible
+			// IIsoDisplayObject -> [obj that should be behind the key]
+			_dependency = new Dictionary(true);
+			
+			// For now, use the non-rearranging display list so that the dependency sort will tend to create similar output each pass
 			var children:Array = scene.displayListChildren;
-			var total:int = children.length;
-			var sorted:Array = [];
-			var i:int = 0;
-			for (; i < total; ++i)
+			
+			// Full naive cartesian scan, see what objects are behind child[i]
+			// TODO - screen space subdivision to limit dependency scan
+			var max:uint = children.length;
+			var i:uint = 0;
+			for (; i < max; ++i)
 			{
-				var added:Boolean = false;
-				for (var j:int = 0; j < sorted.length; ++j)
-				{
-					if (_depthComparer.compare(children[i], sorted[j]))
-					{
-						sorted.splice(j, 0, children[i]);
-						added = true;
-						break;
-					}
-				}
+				_dependency[children[i]] = new Dictionary(true);
+			}
+			
+			for (i = 0; i < max; ++i)
+			{
+				var objA:IsoDisplayObject = children[i];
 				
-				if (!added)
+				for (var j:uint = i + 1; j < max; ++j)
 				{
-					sorted.push(children[i]);
+					var objB:IsoDisplayObject = children[j];
+					if (_depthComparer.compare(objB, objA) < 0)
+					{
+						_dependency[objA][objB] = true;
+					}
+					else if (_depthComparer.compare(objA, objB) < 0)
+					{
+						_dependency[objB][objA] = true;
+					}
 				}
 			}
 			
-			for (i = 0; i < total; ++i)
+			// Set the childrens' depth, using dependency ordering
+			_depth = 0;
+			_visited = new Dictionary(true);
+			for each(var obj:IsoDisplayObject in children)
 			{
-				scene.setChildIndex(sorted[i], i);
+				place(obj);
 			}
+			
+			// clear out
+			_dependency = null;
+			
+			//trace("After scene render: ");
+			//for each (var isoB:IIsoDisplayObject in children)
+			//{
+				//trace(isoB.id + ": " + isoB.depth);
+			//}
 		}
 		
 		/**
-		 * Sort the depth for one iso display object
+		 * Dependency-ordered depth placement of the given objects and its dependencies.
+		 */
+		private function place(obj:IsoDisplayObject):void
+		{
+			if (obj in _visited)
+			{
+				return ;
+			}
+			
+			_visited[obj] = true;
+			
+			for (var inner:Object in _dependency[obj])
+			{
+				place(inner as IsoDisplayObject);
+			}
+			
+			if (_depth != obj.depth)
+			{
+				_scene.setChildIndex(obj, _depth);
+			}
+			
+			++_depth;
+		};
+		
+		/**
+		 * 
 		 * @param	iso
 		 */
-		public function sort(iso:IIsoDisplayObject):void
+		public function redepth(iso:IIsoDisplayObject):void
 		{
-			if (iso == null || iso.parent == null || _scene == null)
-			{
-				return ;
-			}
-			
 			var children:Array = _scene.displayListChildren;
-			var idx:int = children.indexOf(iso);
-			if (idx == -1)
+			
+			var i:int = children.indexOf(iso);
+			if (i == -1)
 			{
 				return ;
 			}
 			
-			// remove this first
-			children.splice(idx, 1);
+			children.splice(i, 1);
 			var len:int = children.length;
-			for (var i:int = 0; i < len; ++i)
+			for (i = 0; i < len; ++i)
 			{
-				if (_depthComparer.compare(iso, children[i]))
+				if (_depthComparer.compare(iso, children[i]) < 0)
 				{
+					//TODO we have to check the dependency of this object
 					_scene.setChildIndex(iso, i);
 					return ;
 				}
 			}
-			
-			_scene.setChildIndex(iso, len);
+			_scene.setChildIndex(iso, i);
 		}
 		
 		////////////////////////////////////////////////////
 		//	Sort Function
 		////////////////////////////////////////////////////
-		public function compare(isoA:IIsoDisplayObject, isoB:IIsoDisplayObject):Boolean
+		public function compare(isoA:IIsoDisplayObject, isoB:IIsoDisplayObject):int
 		{
-			return isoA.x < isoB.x + isoB.width && isoA.y < isoB.y + isoB.length;
+			return (isoA.x < isoB.x + isoB.width && isoA.y < isoB.y + isoB.length) ? - 1 : 1;
 		}
 
 		/////////////////////////////////////////////////////////////////
